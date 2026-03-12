@@ -1,5 +1,5 @@
 # 1-bosqich: Bog'liqliklarni o'rnatish
-FROM oven/bun:1.1 AS base
+FROM oven/bun:1.3 AS base
 WORKDIR /app
 
 # Package fayllarini ko'chiramiz
@@ -9,7 +9,7 @@ COPY package.json bun.lock* ./
 RUN bun install --frozen-lockfile
 
 # 2-bosqich: Kodni ko'chirish va ishga tushirish
-FROM oven/bun:1.1-slim AS release
+FROM oven/bun:1.3-slim AS release
 WORKDIR /app
 
 # Faqat kerakli node_modules va fayllarni olamiz
