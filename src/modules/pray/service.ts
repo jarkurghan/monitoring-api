@@ -1,49 +1,13 @@
 import { queryCityWithCountOrderByCountDesc } from "./repository";
 import { queryDistinctCityCountActiveUsers } from "./repository";
-// import { queryCountTimeNotNullAndInactive } from "./repository";
-// import { queryCountTimeNotNullAndActive } from "./repository";
-// import { queryActiveUsersOrderByIdDesc } from "./repository";
-// import { queryCountTimeNullAndInactive } from "./repository";
-// import { queryCountTimeNullAndActive } from "./repository";
 import { queryActiveUsersCountByTime } from "./repository";
-import { queryUpdatedUsersLast5Days } from "./repository";
-// import { queryActiveUsersByLanguage } from "./repository";
+import { queryUpdatedUsersLastDays } from "./repository";
 import { queryAnyActiveCityDateUz } from "./repository";
-import { queryAllUsersByLanguage } from "./repository";
 import { queryUsersOrderByIdDesc } from "./repository";
 import { queryCountUsersByStatus } from "./repository";
-import { queryCountLanguageNull } from "./repository";
 import { queryCountActiveUsers } from "./repository";
-import { queryPtCityAndTimes } from "./repository";
 import { queryCountAllUsers } from "./repository";
-import { queryCountCityNull } from "./repository";
-import { queryCountTimeNull } from "./repository";
-import { writeFile } from "node:fs/promises";
 import { readFile } from "node:fs/promises";
-
-function minBy<T>(items: T[], getValue: (item: T) => string) {
-    let result: T | null = null;
-    for (const item of items) {
-        const value = getValue(item);
-        if (!value) continue;
-        if (result === null || value < getValue(result)) {
-            result = item;
-        }
-    }
-    return result;
-}
-
-function maxBy<T>(items: T[], getValue: (item: T) => string) {
-    let result: T | null = null;
-    for (const item of items) {
-        const value = getValue(item);
-        if (!value) continue;
-        if (result === null || value > getValue(result)) {
-            result = item;
-        }
-    }
-    return result;
-}
 
 export async function activePerTimes() {
     try {
@@ -156,10 +120,10 @@ export async function latestUsers() {
     }
 }
 
-export async function updatedUsersLast5Days() {
+export async function updatedUsersLastDays(days: number) {
     try {
         type Row = { date: string; count: number };
-        const rows: Row[] = await queryUpdatedUsersLast5Days;
+        const rows: Row[] = await queryUpdatedUsersLastDays(days);
 
         const countsByDate = new Map<string, number>();
         for (const row of rows) {
@@ -172,7 +136,7 @@ export async function updatedUsersLast5Days() {
         const stats: { date: string; weekday: string; count: number }[] = [];
 
         const today = new Date();
-        for (let i = 0; i < 5; i++) {
+        for (let i = 0; i < days; i++) {
             const d = new Date(today);
             d.setDate(today.getDate() - i);
 
@@ -220,68 +184,6 @@ export async function activeUsersAndCities() {
     }
 }
 
-// ------------------------------------------------------- //
-
-// export async function perLanguage() {
-//     try {
-//         const all = await queryAllUsersByLanguage;
-//         const active = await queryActiveUsersByLanguage;
-
-//         const stats = {
-//             cyrill: { all: all.find((row) => row.language === 1)?.count ?? 0, active: active.find((row) => row.language === 1)?.count ?? 0 },
-//             latin: { all: all.find((row) => row.language === 2)?.count ?? 0, active: active.find((row) => row.language === 2)?.count ?? 0 },
-//         };
-
-//         await writeFile("src/modules/pray/stats/per-language.json", JSON.stringify(stats, null, 2), "utf8");
-//     } catch (error) {
-//         console.error(error);
-//     }
-// }
-
-export async function countNulls() {
-    try {
-        const [languageNull] = await queryCountLanguageNull;
-        const [cityNull] = await queryCountCityNull;
-        const [timeNull] = await queryCountTimeNull;
-
-        // const language = languageNull?.count ?? 0;
-        // const city = (cityNull?.count ?? 0) - language;
-        // const time = (timeNull?.count ?? 0) - (city + language);
-        const language = languageNull?.count ?? 0;
-        const city = cityNull?.count ?? 0;
-        const time = timeNull?.count ?? 0;
-
-        const stats = { language, city, time };
-        await writeFile("src/modules/pray/stats/count-nulls.json", JSON.stringify(stats, null, 2), "utf8");
-    } catch (error) {
-        console.error(error);
-    }
-}
-
-export async function topCitiesByUsers() {
-    try {
-        type CityRow = { city: number | null; count: number };
-        type CityInfo = { id: string; name_1: string; name_2: string };
-
-        const rows: CityRow[] = await queryCityWithCountOrderByCountDesc.limit(10);
-
-        const citiesJson = await readFile("src/utils/cities.json", "utf8");
-        const cities: CityInfo[] = JSON.parse(citiesJson);
-        const citiesById = new Map<string, CityInfo>(cities.map((c) => [c.id, c]));
-
-        const stats = rows
-            .filter((row) => row.city != null)
-            .map((row) => {
-                const cityInfo = citiesById.get(String(row.city));
-                return { city_id: row.city, count: row.count, name_1: cityInfo?.name_1 ?? null, name_2: cityInfo?.name_2 ?? null };
-            });
-
-        await writeFile("src/modules/pray/stats/city-count.json", JSON.stringify(stats, null, 2), "utf8");
-    } catch (error) {
-        console.error(error);
-    }
-}
-
 export async function cityCountsWithRegion() {
     try {
         type CityRow = { city: number | null; count: number };
@@ -311,79 +213,30 @@ export async function cityCountsWithRegion() {
         return stats;
     } catch (error) {
         console.error(error);
+        return [];
     }
 }
 
-export async function minMaxPrayerTimes() {
+export async function cityCountsByRegionName(regionName: string) {
     try {
-        type RowWithTimes = { city: number; tong: string; quyosh: string; peshin: string; asr: string; shom: string; xufton: string };
-        const rows: RowWithTimes[] = await queryPtCityAndTimes;
+        type CityRow = { city: number | null; count: number };
+        type CityInfo = { id: string; name_2: string; viloyat_2: string };
 
-        const stats = {
-            tong: {
-                earliest: (() => {
-                    const row = minBy(rows, (r) => r.tong);
-                    return row ? { time: row.tong, city: row.city } : null;
-                })(),
-                latest: (() => {
-                    const row = maxBy(rows, (r) => r.tong);
-                    return row ? { time: row.tong, city: row.city } : null;
-                })(),
-            },
-            quyosh: {
-                earliest: (() => {
-                    const row = minBy(rows, (r) => r.quyosh);
-                    return row ? { time: row.quyosh, city: row.city } : null;
-                })(),
-                latest: (() => {
-                    const row = maxBy(rows, (r) => r.quyosh);
-                    return row ? { time: row.quyosh, city: row.city } : null;
-                })(),
-            },
-            peshin: {
-                earliest: (() => {
-                    const row = minBy(rows, (r) => r.peshin);
-                    return row ? { time: row.peshin, city: row.city } : null;
-                })(),
-                latest: (() => {
-                    const row = maxBy(rows, (r) => r.peshin);
-                    return row ? { time: row.peshin, city: row.city } : null;
-                })(),
-            },
-            asr: {
-                earliest: (() => {
-                    const row = minBy(rows, (r) => r.asr);
-                    return row ? { time: row.asr, city: row.city } : null;
-                })(),
-                latest: (() => {
-                    const row = maxBy(rows, (r) => r.asr);
-                    return row ? { time: row.asr, city: row.city } : null;
-                })(),
-            },
-            shom: {
-                earliest: (() => {
-                    const row = minBy(rows, (r) => r.shom);
-                    return row ? { time: row.shom, city: row.city } : null;
-                })(),
-                latest: (() => {
-                    const row = maxBy(rows, (r) => r.shom);
-                    return row ? { time: row.shom, city: row.city } : null;
-                })(),
-            },
-            xufton: {
-                earliest: (() => {
-                    const row = minBy(rows, (r) => r.xufton);
-                    return row ? { time: row.xufton, city: row.city } : null;
-                })(),
-                latest: (() => {
-                    const row = maxBy(rows, (r) => r.xufton);
-                    return row ? { time: row.xufton, city: row.city } : null;
-                })(),
-            },
-        };
+        const citiesJson = await readFile("src/utils/cities.json", "utf8");
+        const cities: CityInfo[] = JSON.parse(citiesJson).filter((c: CityInfo) => c.viloyat_2.toLowerCase() === regionName.toLowerCase());
 
-        await writeFile("src/modules/pray/stats/min-max-prayer-times.json", JSON.stringify(stats, null, 2), "utf8");
+        const rows: CityRow[] = await queryCityWithCountOrderByCountDesc;
+
+        const stats = rows
+            .map((row) => {
+                const cityInfo = cities.find((c) => c.id === String(row.city));
+                return { city_id: row.city, count: row.count, name_2: cityInfo?.name_2 ?? null };
+            })
+            .filter((row) => row.name_2 != null);
+
+        return stats;
     } catch (error) {
         console.error(error);
+        return [];
     }
 }

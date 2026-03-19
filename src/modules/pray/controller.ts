@@ -1,13 +1,10 @@
 import { Context } from "hono";
 import { activePerTimes } from "./service";
+import { cityCountsByRegionName } from "./service";
 import { activeUsersAndCities } from "./service";
 import { cityCountsWithRegion } from "./service";
-import { updatedUsersLast5Days } from "./service";
-import { minMaxPrayerTimes } from "./service";
-import { topCitiesByUsers } from "./service";
+import { updatedUsersLastDays } from "./service";
 import { latestUsers } from "./service";
-// import { perLanguage } from "./service";
-import { countNulls } from "./service";
 import { userStatus } from "./service";
 
 export const getActivePerTimes = async (c: Context) => {
@@ -30,9 +27,17 @@ export const getLatestUsers = async (c: Context) => {
     }
 };
 
-export const getUpdatedUsersLast5Days = async (c: Context) => {
+export const getUpdatedUsersLastDays = async (c: Context) => {
     try {
-        const stats = await updatedUsersLast5Days();
+        const rawDays = c.req.param("days");
+        const days = Number.parseInt(rawDays ?? "", 10);
+
+        if (!Number.isFinite(days) || Number.isNaN(days) || days < 1 || days > 365) {
+            c.status(400);
+            return c.json({ message: "Invalid 'days' param. Expected integer 1..365." });
+        }
+
+        const stats = await updatedUsersLastDays(days);
         return c.json(stats);
     } catch (error) {
         c.status(500);
@@ -70,45 +75,13 @@ export const getCityCountsWithRegion = async (c: Context) => {
     }
 };
 
-// ------------------------------------------------------- //
-
-// export const getPerLanguage = async (c: Context) => {
-//     try {
-//         const stats = await perLanguage();
-//         return c.json(stats);
-//     } catch (error) {
-//         c.status(500);
-//         return c.json({ message: "Internal server error" });
-//     }
-// };
-
-export const getCountNulls = async (c: Context) => {
+export const getCityCountsByRegionName = async (c: Context) => {
     try {
-        const stats = await countNulls();
+        const regionName = c.req.param("region");
+        const stats = await cityCountsByRegionName(regionName!);
         return c.json(stats);
     } catch (error) {
         c.status(500);
         return c.json({ message: "Internal server error" });
     }
 };
-
-export const getCityCount = async (c: Context) => {
-    try {
-        const stats = await topCitiesByUsers();
-        return c.json(stats);
-    } catch (error) {
-        c.status(500);
-        return c.json({ message: "Internal server error" });
-    }
-};
-
-export const getMinMaxPrayerTimes = async (c: Context) => {
-    try {
-        const stats = await minMaxPrayerTimes();
-        return c.json(stats);
-    } catch (error) {
-        c.status(500);
-        return c.json({ message: "Internal server error" });
-    }
-};
-
