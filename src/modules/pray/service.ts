@@ -1,16 +1,17 @@
 import { queryCityWithCountOrderByCountDesc } from "./repository";
 import { queryDistinctCityCountActiveUsers } from "./repository";
-import { queryCountTimeNotNullAndInactive } from "./repository";
-import { queryCountTimeNotNullAndActive } from "./repository";
-import { queryActiveUsersOrderByIdDesc } from "./repository";
-import { queryCountTimeNullAndInactive } from "./repository";
-import { queryCountTimeNullAndActive } from "./repository";
+// import { queryCountTimeNotNullAndInactive } from "./repository";
+// import { queryCountTimeNotNullAndActive } from "./repository";
+// import { queryActiveUsersOrderByIdDesc } from "./repository";
+// import { queryCountTimeNullAndInactive } from "./repository";
+// import { queryCountTimeNullAndActive } from "./repository";
 import { queryActiveUsersCountByTime } from "./repository";
 import { queryUpdatedUsersLast5Days } from "./repository";
-import { queryActiveUsersByLanguage } from "./repository";
+// import { queryActiveUsersByLanguage } from "./repository";
 import { queryAnyActiveCityDateUz } from "./repository";
 import { queryAllUsersByLanguage } from "./repository";
 import { queryUsersOrderByIdDesc } from "./repository";
+import { queryCountUsersByStatus } from "./repository";
 import { queryCountLanguageNull } from "./repository";
 import { queryCountActiveUsers } from "./repository";
 import { queryPtCityAndTimes } from "./repository";
@@ -72,26 +73,18 @@ export async function activePerTimes() {
 
 export async function userStatus() {
     try {
-        const [timeNullActiveTrue] = await queryCountTimeNullAndActive;
-        const [timeNullActiveFalse] = await queryCountTimeNullAndInactive;
-        const [timeNotNullActiveTrue] = await queryCountTimeNotNullAndActive;
-        const [timeNotNullActiveFalse] = await queryCountTimeNotNullAndInactive;
+        const counts = await queryCountUsersByStatus;
 
-        const timeNullActiveTrueCount = timeNullActiveTrue?.count ?? 0;
-        const timeNullActiveFalseCount = timeNullActiveFalse?.count ?? 0;
-        const timeNotNullActiveTrueCount = timeNotNullActiveTrue?.count ?? 0;
-        const timeNotNullActiveFalseCount = timeNotNullActiveFalse?.count ?? 0;
-
-        const new_users = timeNullActiveTrueCount;
-        const respawn = timeNullActiveFalseCount;
-        const active = timeNotNullActiveTrueCount;
-        const inactive = timeNotNullActiveFalseCount;
+        const obj = counts.reduce<Record<string, number>>((acc, item) => {
+            acc[item.status] = item.count;
+            return acc;
+        }, {});
 
         const stats = [
-            { status: "Yangi", count: new_users },
-            { status: "Tugallanmagan", count: respawn },
-            { status: "Aktiv", count: active },
-            { status: "O'chirilgan", count: inactive },
+            { status: "Yangi", count: obj.new || 0 },
+            { status: "Aktiv", count: obj.active || 0 },
+            { status: "O'chirilgan", count: (obj.has_blocked || 0) + (obj.inactive || 0) },
+            { status: "Boshqa", count: (obj.other || 0) + (obj.deleted_account || 0) },
         ];
 
         return stats;
@@ -101,6 +94,8 @@ export async function userStatus() {
     }
 }
 
+type Status = "new" | "active" | "inactive" | "deleted_account" | "has_blocked" | "other";
+
 type ActiveUserRow = {
     city: number | null;
     time: number | null;
@@ -109,19 +104,26 @@ type ActiveUserRow = {
     first_name?: unknown;
     last_name?: unknown;
     username?: unknown;
-    is_active: boolean;
+    status: Status;
 };
 
-const checkStatus = (user: ActiveUserRow) => {
-    const { is_active, time, language, city } = user;
-    if (time == null || language == null || city == null) {
-        if (is_active)
-            return "Yangi"; // 🔵
-        else return "Tugallanmagan"; // 🟡 Tugallanmagan
-    } else {
-        if (is_active)
-            return "Aktiv"; // 🟢 Aktiv
-        else return "O'chirilgan"; // 🔴 O'chirilgan
+const checkStatus = (status: Status) => {
+    switch (status) {
+        case "active":
+            return "Aktiv";
+        case "deleted_account":
+            return "Boshqa";
+        case "has_blocked":
+            return "O'chirilgan";
+        case "inactive":
+            return "O'chirilgan";
+        case "new":
+            return "Yangi";
+        case "other":
+            return "Boshqa";
+
+        default:
+            return "Boshqa";
     }
 };
 
@@ -135,7 +137,7 @@ export async function latestUsers() {
         const citiesById = new Map<string, CityInfo>(cities.map((c) => [c.id, c]));
 
         const usersForStats = users.map((user) => {
-            const { city, time, language, tg_id, first_name, last_name, username, is_active, ...rest } = user;
+            const { city, time, language, tg_id, first_name, last_name, username, status, ...rest } = user;
 
             const cityName =
                 city == null ? null : language === 1 ? (citiesById.get(String(city))?.name_1 ?? null) : (citiesById.get(String(city))?.name_2 ?? null);
@@ -144,7 +146,7 @@ export async function latestUsers() {
 
             const formattedTime = time == null || Number.isNaN(Number(time)) ? null : `${String(Number(time)).padStart(2, "0")}:00`;
 
-            return { ...rest, city: cityName, region: regionName, time: formattedTime, status: checkStatus(user) };
+            return { ...rest, city: cityName, region: regionName, time: formattedTime, status: checkStatus(status) };
         });
 
         return usersForStats;
@@ -220,21 +222,21 @@ export async function activeUsersAndCities() {
 
 // ------------------------------------------------------- //
 
-export async function perLanguage() {
-    try {
-        const all = await queryAllUsersByLanguage;
-        const active = await queryActiveUsersByLanguage;
+// export async function perLanguage() {
+//     try {
+//         const all = await queryAllUsersByLanguage;
+//         const active = await queryActiveUsersByLanguage;
 
-        const stats = {
-            cyrill: { all: all.find((row) => row.language === 1)?.count ?? 0, active: active.find((row) => row.language === 1)?.count ?? 0 },
-            latin: { all: all.find((row) => row.language === 2)?.count ?? 0, active: active.find((row) => row.language === 2)?.count ?? 0 },
-        };
+//         const stats = {
+//             cyrill: { all: all.find((row) => row.language === 1)?.count ?? 0, active: active.find((row) => row.language === 1)?.count ?? 0 },
+//             latin: { all: all.find((row) => row.language === 2)?.count ?? 0, active: active.find((row) => row.language === 2)?.count ?? 0 },
+//         };
 
-        await writeFile("src/modules/pray/stats/per-language.json", JSON.stringify(stats, null, 2), "utf8");
-    } catch (error) {
-        console.error(error);
-    }
-}
+//         await writeFile("src/modules/pray/stats/per-language.json", JSON.stringify(stats, null, 2), "utf8");
+//     } catch (error) {
+//         console.error(error);
+//     }
+// }
 
 export async function countNulls() {
     try {
@@ -303,10 +305,10 @@ export async function cityCountsWithRegion() {
         }
 
         const stats = Array.from(regionCounts.entries())
-            .map(([viloyat_2, count]) => ({ viloyat_2, count }))
+            .map(([viloyat_2, count]) => ({ viloyat: viloyat_2, count }))
             .sort((a, b) => b.count - a.count);
 
-        await writeFile("src/modules/pray/stats/city-count-with-region.json", JSON.stringify(stats, null, 2), "utf8");
+        return stats;
     } catch (error) {
         console.error(error);
     }

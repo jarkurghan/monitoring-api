@@ -6,7 +6,7 @@ import { updatedUsersLast5Days } from "./service";
 import { minMaxPrayerTimes } from "./service";
 import { topCitiesByUsers } from "./service";
 import { latestUsers } from "./service";
-import { perLanguage } from "./service";
+// import { perLanguage } from "./service";
 import { countNulls } from "./service";
 import { userStatus } from "./service";
 
@@ -60,17 +60,27 @@ export const getActiveUsersAndCities = async (c: Context) => {
     }
 };
 
-// ------------------------------------------------------- //
-
-export const getPerLanguage = async (c: Context) => {
+export const getCityCountsWithRegion = async (c: Context) => {
     try {
-        const stats = await perLanguage();
+        const stats = await cityCountsWithRegion();
         return c.json(stats);
     } catch (error) {
         c.status(500);
         return c.json({ message: "Internal server error" });
     }
 };
+
+// ------------------------------------------------------- //
+
+// export const getPerLanguage = async (c: Context) => {
+//     try {
+//         const stats = await perLanguage();
+//         return c.json(stats);
+//     } catch (error) {
+//         c.status(500);
+//         return c.json({ message: "Internal server error" });
+//     }
+// };
 
 export const getCountNulls = async (c: Context) => {
     try {
@@ -85,16 +95,6 @@ export const getCountNulls = async (c: Context) => {
 export const getCityCount = async (c: Context) => {
     try {
         const stats = await topCitiesByUsers();
-        return c.json(stats);
-    } catch (error) {
-        c.status(500);
-        return c.json({ message: "Internal server error" });
-    }
-};
-
-export const getCityCountsWithRegion = async (c: Context) => {
-    try {
-        const stats = await cityCountsWithRegion();
         return c.json(stats);
     } catch (error) {
         c.status(500);
