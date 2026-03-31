@@ -1,7 +1,15 @@
-const DB_HOST = process.env.DB_HOST;
-const DB_PORT = process.env.DB_PORT;
-const DB_USER = process.env.DB_USER;
-const DB_PASSWORD = process.env.DB_PASSWORD;
-const DB_NAME = process.env.DB_NAME;
-export const IS_HAVE_DATABASE_URL = !!DB_HOST && !!DB_PORT && !!DB_USER && !!DB_PASSWORD && !!DB_NAME;
-export const DATABASE_URL = `postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}`;
+const PRAY_DB_HOST = process.env.PRAY_DB_HOST;
+const PRAY_DB_PORT = process.env.PRAY_DB_PORT;
+const PRAY_DB_USER = process.env.PRAY_DB_USER;
+const PRAY_DB_PASSWORD = process.env.PRAY_DB_PASSWORD;
+const PRAY_DB_NAME = process.env.PRAY_DB_NAME;
+export const IS_HAVE_PRAY_DATABASE_URL = !!PRAY_DB_HOST && !!PRAY_DB_PORT && !!PRAY_DB_USER && !!PRAY_DB_PASSWORD && !!PRAY_DB_NAME;
+export const PRAY_DATABASE_URL = `postgresql://${PRAY_DB_USER}:${PRAY_DB_PASSWORD}@${PRAY_DB_HOST}:${PRAY_DB_PORT}/${PRAY_DB_NAME}`;
+
+const INSTA_DB_HOST = process.env.INSTA_DB_HOST;
+const INSTA_DB_PORT = process.env.INSTA_DB_PORT;
+const INSTA_DB_USER = process.env.INSTA_DB_USER;
+const INSTA_DB_PASSWORD = process.env.INSTA_DB_PASSWORD;
+const INSTA_DB_NAME = process.env.INSTA_DB_NAME;
+export const IS_HAVE_INSTA_DATABASE_URL = !!INSTA_DB_HOST && !!INSTA_DB_PORT && !!INSTA_DB_USER && !!INSTA_DB_PASSWORD && !!INSTA_DB_NAME;
+export const INSTA_DATABASE_URL = `postgresql://${INSTA_DB_USER}:${INSTA_DB_PASSWORD}@${INSTA_DB_HOST}:${INSTA_DB_PORT}/${INSTA_DB_NAME}`;

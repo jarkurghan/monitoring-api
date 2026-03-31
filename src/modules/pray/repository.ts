@@ -5,9 +5,9 @@ import { eq } from "drizzle-orm";
 import { sql } from "drizzle-orm";
 import { and } from "drizzle-orm";
 import { gt } from "drizzle-orm";
-import { ptu } from "@/db/schema";
-import { pt } from "@/db/schema";
-import { db } from "@/db/client";
+import { ptu } from "@/db/pray/schema";
+import { pt } from "@/db/pray/schema";
+import { db } from "@/db/pray/client";
 
 // --- Conditions  ---
 const conditionCityNull = isNull(ptu.city);
