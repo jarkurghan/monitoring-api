@@ -1,4 +1,4 @@
-import { and, desc, gte, lte, sql } from "drizzle-orm";
+import { and, desc, eq, gte, lte, sql } from "drizzle-orm";
 import { db, sql as instaSql } from "@/db/insta/client";
 import { isg, isu } from "@/db/insta/schema";
 
@@ -8,7 +8,7 @@ const selectSumTotalGroupUsages = { total_group_usages: sql<number>`coalesce(sum
 
 const selectUserStatusWithCount = { status: isu.status, count: sql<number>`count(*)`.mapWith(Number) };
 const selectGroupStatusWithCount = { status: isg.status, count: sql<number>`count(*)`.mapWith(Number) };
-const selectGroupWithTotalCount = { group_name: isg.chat_name, total_count: isg.total_count, today_count: isg.today_count };
+const selectGroupWithTotalCount = { global_name: isg.global_name, total_count: isg.total_count, today_count: isg.today_count };
 
 export const queryTotalUsers = db.select(selectCount).from(isu);
 export const queryTotalGroups = db.select(selectCount).from(isg);
@@ -18,7 +18,7 @@ export const queryTotalUserUsages = db.select(selectSumTotalUserUsages).from(isu
 export const queryTotalGroupUsages = db.select(selectSumTotalGroupUsages).from(isg);
 
 export function queryTopGroupsByTotalCount(limit: number) {
-    return db.select(selectGroupWithTotalCount).from(isg).orderBy(desc(isg.total_count)).limit(limit);
+    return db.select(selectGroupWithTotalCount).from(isg).orderBy(desc(isg.total_count)).where(eq(isg.is_global, true)).limit(limit);
 }
 
 export const queryUsersByStatus = db

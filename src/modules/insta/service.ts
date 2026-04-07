@@ -17,7 +17,7 @@ export async function instaSummaryBasic() {
         const stats = {
             total_users: usersRow?.count ?? 0,
             total_groups: groupsRow?.count ?? 0,
-            total_usages: userUsageRow?.total_usages ?? 0,
+            total_usages: (userUsageRow?.total_usages ?? 0) + (groupUsageRow?.total_group_usages ?? 0),
             total_group_usages: groupUsageRow?.total_group_usages ?? 0,
         };
 
@@ -110,11 +110,11 @@ export async function instaGroupsByStatus() {
 
 export async function instaTopGroups(limit: number) {
     try {
-        type Row = { group_name: string | null; total_count: number; today_count: number };
+        type Row = { global_name: string | null; total_count: number; today_count: number };
         const rows: Row[] = await queryTopGroupsByTotalCount(limit);
 
         return rows.map((row) => ({
-            group_name: row.group_name ?? "Noma'lum guruh",
+            group_name: row.global_name ?? "Noma'lum guruh",
             total_count: row.total_count ?? 0,
             today_count: row.today_count ?? 0,
         }));
