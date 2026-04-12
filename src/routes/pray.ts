@@ -6,6 +6,7 @@ import { getUpdatedUsersLastDays } from "@/modules/pray/controller";
 import { getCityCountsWithRegion } from "@/modules/pray/controller";
 import { getCityCountsByRegionName } from "@/modules/pray/controller";
 import { getUserStatus } from "@/modules/pray/controller";
+import { getCreatedUsersTillDays } from "@/modules/pray/controller";
 
 const pray = new Hono();
 
@@ -16,5 +17,6 @@ pray.get("/stat/active-users-and-cities", getActiveUsersAndCities);
 pray.get("/stat/city-count-with-region", getCityCountsWithRegion);
 pray.get("/stat/city-count-with-region/:region", getCityCountsByRegionName);
 pray.get("/stat/updated-users-last-days/:days", getUpdatedUsersLastDays);
+pray.get("/stat/created-users-till-days/:days", getCreatedUsersTillDays);
 
 export default pray;

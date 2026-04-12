@@ -1,7 +1,9 @@
+import { queryTotalUsersBeforeCreatedDayStart } from "./repository";
 import { queryCityWithCountOrderByCountDesc } from "./repository";
 import { queryDistinctCityCountActiveUsers } from "./repository";
 import { queryActiveUsersCountByTime } from "./repository";
 import { queryUpdatedUsersLastDays } from "./repository";
+import { queryCreatedUsersLastDays } from "./repository";
 import { queryAnyActiveCityDateUz } from "./repository";
 import { queryUsersOrderByIdDesc } from "./repository";
 import { queryCountUsersByStatus } from "./repository";
@@ -131,9 +133,7 @@ export async function updatedUsersLastDays(days: number) {
             countsByDate.set(row.date, row.count);
         }
 
-        const weekdayNames = ["Yakshanba", "Dushanba", "Seshanba", "Chorshanba", "Payshanba", "Juma", "Shanba"];
-
-        const stats: { date: string; weekday: string; count: number }[] = [];
+        const stats: { date: string; count: number }[] = [];
 
         const today = new Date();
         for (let i = 0; i < days; i++) {
@@ -141,13 +141,46 @@ export async function updatedUsersLastDays(days: number) {
             d.setDate(today.getDate() - i);
 
             const dateStr = d.toISOString().slice(0, 10);
-            const weekday = weekdayNames[d.getDay()];
             const count = countsByDate.get(dateStr) ?? 0;
 
-            stats.push({ date: dateStr.split("-").reverse().join("."), weekday, count });
+            stats.push({ date: dateStr.split("-").reverse().join("."), count });
         }
 
         return stats.reverse();
+    } catch (error) {
+        console.error(error);
+        return [];
+    }
+}
+
+export async function createdUsersTillDays(days: number) {
+    try {
+        type Row = { date: string; count: number };
+        const [baselineRows, rows] = await Promise.all([queryTotalUsersBeforeCreatedDayStart(days), queryCreatedUsersLastDays(days)]);
+
+        const baseline = baselineRows?.[0]?.count ?? 0;
+
+        const countsByDate = new Map<string, number>();
+        for (const row of rows as Row[]) {
+            if (!row.date) continue;
+            countsByDate.set(row.date, row.count);
+        }
+
+        const stats: { date: string; users: number }[] = [];
+
+        const today = new Date();
+        let running = baseline;
+        for (let i = 0; i < days; i++) {
+            const d = new Date(today);
+            d.setDate(today.getDate() - i);
+
+            const dateStr = d.toISOString().slice(0, 10);
+            running += countsByDate.get(dateStr) ?? 0;
+
+            stats.push({ date: dateStr.split("-").reverse().join("."), users: running });
+        }
+
+        return stats;
     } catch (error) {
         console.error(error);
         return [];

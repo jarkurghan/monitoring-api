@@ -26,6 +26,7 @@ const selectDistinctCityCount = { count: sql<number>`count(distinct ${ptu.city})
 const selectLanguageWithCount = { language: ptu.language, count: sql<number>`count(*)`.mapWith(Number) };
 const selectPtCityAndTimes = { city: pt.city, tong: pt.tong, quyosh: pt.quyosh, peshin: pt.peshin, asr: pt.asr, shom: pt.shom, xufton: pt.xufton };
 const selectUpdatedDateWithCount = { date: sql<string>`date(${ptu.updated_at})`.as("date"), count: sql<number>`count(*)`.mapWith(Number) };
+const selectCreatedDateWithCount = { date: sql<string>`date(${ptu.created_at})`.as("date"), count: sql<number>`count(*)`.mapWith(Number) };
 
 // --- OrderBy ---
 const orderByTimeAsc = ptu.time;
@@ -69,4 +70,20 @@ export function queryUpdatedUsersLastDays(days: number) {
         .where(gt(ptu.updated_at, sql`now() - make_interval(days => ${days})`))
         .groupBy(sql`date(${ptu.updated_at})`)
         .orderBy(orderByUpdatedDate);
+}
+
+export function queryCreatedUsersLastDays(days: number) {
+    return db
+        .select(selectCreatedDateWithCount)
+        .from(ptu)
+        .where(gt(ptu.created_at, sql`now() - make_interval(days => ${days})`))
+        .groupBy(sql`date(${ptu.created_at})`)
+        .orderBy(sql`date(${ptu.created_at})`);
+}
+
+export function queryTotalUsersBeforeCreatedDayStart(days: number) {
+    return db
+        .select(selectCount)
+        .from(ptu)
+        .where(sql`date(${ptu.created_at}) < date(now() - make_interval(days => ${days - 1}))`);
 }
