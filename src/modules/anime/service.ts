@@ -9,6 +9,7 @@ import { queryUsersByStatus } from "./repository";
 import { queryNewUsersLastDaysTashkent } from "./repository";
 import { queryTashkentDayStartsIso } from "./repository";
 import { queryTotalUsersBeforeDayStartTashkent } from "./repository";
+import { queryLatestAnimesByEpisodeCreatedAt } from "./repository";
 
 export async function animeSummaryBasic() {
     try {
@@ -136,6 +137,31 @@ export async function animeDailyTotalUsers(days: number) {
             running += d.users ?? 0;
             return { date: d.date, users: running };
         });
+    } catch (error) {
+        console.error(error);
+        return [];
+    }
+}
+
+export async function animeLatestAnimes(limit: number) {
+    try {
+        type Row = {
+            anime_name: string | null;
+            number_of_episode: number | null;
+            episode_count: number;
+            dub_name: string | null;
+            created_date: string | Date | null;
+        };
+
+        const rows: Row[] = await queryLatestAnimesByEpisodeCreatedAt(limit);
+
+        return rows.map((r) => ({
+            anime_name: r.anime_name ?? "Noma'lum anime",
+            number_of_episode: r.number_of_episode ?? 0,
+            episode_count: r.episode_count ?? 0,
+            dub_name: r.dub_name ?? "Noma'lum dub",
+            created_date: r.created_date,
+        }));
     } catch (error) {
         console.error(error);
         return [];

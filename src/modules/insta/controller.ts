@@ -1,5 +1,5 @@
 import type { Context } from "hono";
-import { instaWeeklyNewUsersGroupsTashkent } from "./service";
+import { instaWeeklyCumulativeBeforeMondayTashkent } from "./service";
 import { instaGroupsByStatus } from "./service";
 import { instaUsersByStatus } from "./service";
 import { instaSummaryBasic } from "./service";
@@ -15,7 +15,7 @@ export const getInstaSummaryBasic = async (c: Context) => {
     }
 };
 
-export const getInstaWeeklyNewUsersGroupsTashkent = async (c: Context) => {
+export const getInstaWeeklyCounts = async (c: Context) => {
     try {
         const rawWeeks = c.req.param("weeks");
         const weeks = Number.parseInt(rawWeeks ?? "", 10);
@@ -25,7 +25,7 @@ export const getInstaWeeklyNewUsersGroupsTashkent = async (c: Context) => {
             return c.json({ message: "Invalid 'weeks' param. Expected integer 1..52." });
         }
 
-        const stats = await instaWeeklyNewUsersGroupsTashkent(weeks);
+        const stats = await instaWeeklyCumulativeBeforeMondayTashkent(weeks);
         return c.json(stats);
     } catch (error) {
         c.status(500);

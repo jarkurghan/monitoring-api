@@ -105,3 +105,37 @@ export function queryTopUsersByTotalCount(limit: number) {
         .orderBy(desc(abu.total_count))
         .limit(limit);
 }
+
+export async function queryLatestAnimesByEpisodeCreatedAt(limit: number) {
+    type Row = {
+        anime_name: string | null;
+        number_of_episode: number | null;
+        episode_count: number;
+        dub_name: string | null;
+        created_date: string | Date | null;
+    };
+
+    const rows = await animeSql<Row[]>`
+        select *
+        from (
+            select distinct on (e.anime_id, e.dub)
+                a.name as anime_name,
+                a.number_of_episode as number_of_episode,
+                (
+                    select count(*)
+                    from episode e2
+                    where e2.anime_id = e.anime_id
+                )::int as episode_count,
+                coalesce(d.name, e.dub, 'Noma''lum dub') as dub_name,
+                e.created_at as created_date
+            from episode e
+            inner join anime a on a.id = e.anime_id
+            left join dub d on d.id = (e.dub)::int
+            order by e.anime_id, e.dub, e.created_at desc
+        ) t
+        order by t.created_date desc
+        limit ${limit}
+    `;
+
+    return rows;
+}

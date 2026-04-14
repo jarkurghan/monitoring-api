@@ -5,9 +5,7 @@ import { queryGroupsByStatus } from "./repository";
 import { queryTotalUserUsages } from "./repository";
 import { queryTotalGroupUsages } from "./repository";
 import { queryTopGroupsByTotalCount } from "./repository";
-import { queryTashkentWeekMondaysIso } from "./repository";
-import { queryNewUsersLastWeeksTashkent } from "./repository";
-import { queryNewGroupsLastWeeksTashkent } from "./repository";
+import { queryCumulativeUsersGroupsBeforeMondaysTashkent } from "./repository";
 
 export async function instaSummaryBasic() {
     try {
@@ -28,28 +26,16 @@ export async function instaSummaryBasic() {
     }
 }
 
-export async function instaWeeklyNewUsersGroupsTashkent(n: number) {
+export async function instaWeeklyCumulativeBeforeMondayTashkent(n: number) {
     try {
-        const [mondays, userRows, groupRows] = await Promise.all([
-            queryTashkentWeekMondaysIso(n),
-            queryNewUsersLastWeeksTashkent(n),
-            queryNewGroupsLastWeeksTashkent(n),
-        ]);
+        const rows = await queryCumulativeUsersGroupsBeforeMondaysTashkent(n);
+        if (rows.length === 0) return [];
 
-        if (mondays.length === 0) return [];
-
-        const usersByWeek = new Map(userRows.map((r) => [r.week, r.count]));
-        const groupsByWeek = new Map(groupRows.map((r) => [r.week, r.count]));
-
-        const stats: { date: string; users: number; groups: number }[] = [];
-
-        for (const iso of mondays) {
-            stats.push({
-                date: iso.split("-").reverse().join("-"),
-                users: usersByWeek.get(iso) ?? 0,
-                groups: groupsByWeek.get(iso) ?? 0,
-            });
-        }
+        const stats: { date: string; users: number; groups: number }[] = rows.map((r) => ({
+            date: r.week.split("-").reverse().join("-"),
+            users: r.users ?? 0,
+            groups: r.groups ?? 0,
+        }));
 
         return stats.reverse();
     } catch (error) {

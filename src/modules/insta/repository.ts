@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, lte, sql } from "drizzle-orm";
+import { desc, eq, sql } from "drizzle-orm";
 import { db, sql as instaSql } from "@/db/insta/client";
 import { isg, isu } from "@/db/insta/schema";
 
@@ -35,48 +35,18 @@ export const queryGroupsByStatus = db
     .groupBy(isg.status)
     .orderBy(isg.status);
 
-const weekStartTashkentUsers = sql`date_trunc('week', ${isu.created_at} AT TIME ZONE 'Asia/Tashkent')::date`;
-const weekStartTashkentGroups = sql`date_trunc('week', ${isg.created_at} AT TIME ZONE 'Asia/Tashkent')::date`;
-const currentWeekStartTashkent = sql`date_trunc('week', now() AT TIME ZONE 'Asia/Tashkent')::date`;
-
-export async function queryTashkentWeekMondaysIso(n: number): Promise<string[]> {
-    const rows = await instaSql<{ d: string }[]>`
-        select (date_trunc('week', now() at time zone 'Asia/Tashkent')::date - (g * 7))::text as d
-        from generate_series(0, ${n - 1}) as g
+export async function queryCumulativeUsersGroupsBeforeMondaysTashkent(weeks: number): Promise<{ week: string; users: number; groups: number }[]> {
+    const rows = await instaSql<{ week: string; users: number; groups: number }[]>`
+        with mondays as (
+            select (date_trunc('week', now() at time zone 'Asia/Tashkent')::date - (g * 7))::date as monday
+            from generate_series(0, ${weeks - 1}) as g
+        )
+        select
+            mondays.monday::text as week,
+            (select count(*)::int from insta_saver_users u where (u.created_at at time zone 'Asia/Tashkent') < mondays.monday) as users,
+            (select count(*)::int from insta_saver_groups g where (g.created_at at time zone 'Asia/Tashkent') < mondays.monday) as groups
+        from mondays
+        order by mondays.monday desc
     `;
-    return rows.map((r) => r.d);
-}
-
-export function queryNewUsersLastWeeksTashkent(weeks: number) {
-    const oldestOffsetDays = (weeks - 1) * 7;
-    const oldestMonday =
-        oldestOffsetDays === 0
-            ? currentWeekStartTashkent
-            : sql`(date_trunc('week', now() AT TIME ZONE 'Asia/Tashkent')::date - (${oldestOffsetDays} * interval '1 day'))`;
-    return db
-        .select({
-            week: sql<string>`${weekStartTashkentUsers}::text`.as("week"),
-            count: sql<number>`count(*)`.mapWith(Number),
-        })
-        .from(isu)
-        .where(and(gte(weekStartTashkentUsers, oldestMonday), lte(weekStartTashkentUsers, currentWeekStartTashkent)))
-        .groupBy(weekStartTashkentUsers)
-        .orderBy(desc(weekStartTashkentUsers));
-}
-
-export function queryNewGroupsLastWeeksTashkent(weeks: number) {
-    const oldestOffsetDays = (weeks - 1) * 7;
-    const oldestMonday =
-        oldestOffsetDays === 0
-            ? currentWeekStartTashkent
-            : sql`(date_trunc('week', now() AT TIME ZONE 'Asia/Tashkent')::date - (${oldestOffsetDays} * interval '1 day'))`;
-    return db
-        .select({
-            week: sql<string>`${weekStartTashkentGroups}::text`.as("week"),
-            count: sql<number>`count(*)`.mapWith(Number),
-        })
-        .from(isg)
-        .where(and(gte(weekStartTashkentGroups, oldestMonday), lte(weekStartTashkentGroups, currentWeekStartTashkent)))
-        .groupBy(weekStartTashkentGroups)
-        .orderBy(desc(weekStartTashkentGroups));
+    return rows.map((r) => ({ week: r.week, users: Number(r.users ?? 0), groups: Number(r.groups ?? 0) }));
 }

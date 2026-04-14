@@ -6,6 +6,7 @@ import { animeTopUsers } from "./service";
 import { animeUsersByStatus } from "./service";
 import { animeDailyNewUsers } from "./service";
 import { animeDailyTotalUsers } from "./service";
+import { animeLatestAnimes } from "./service";
 
 export const getAnimeSummaryBasic = async (c: Context) => {
     try {
@@ -35,6 +36,20 @@ export const getAnimeTopDubs = async (c: Context) => {
     }
 };
 
+export const getAnimeTop5Dubs = async (c: Context) => {
+    try {
+        const stats = await animeTopDubs(20000);
+
+        const top5Dubs = stats.slice(0, 2);
+        top5Dubs.push({ dub_name: "Boshqalar", total_count: stats.slice(2).reduce((acc, curr) => acc + curr.total_count, 0), today_count: 0 });
+
+        return c.json(top5Dubs.map((item) => ({ dub_name: item.dub_name, count: item.total_count })));
+    } catch (error) {
+        c.status(500);
+        return c.json({ message: "Internal server error" });
+    }
+};
+
 export const getAnimeTopAnimes = async (c: Context) => {
     try {
         const rawTopCount = c.req.param("topCount");
@@ -47,6 +62,20 @@ export const getAnimeTopAnimes = async (c: Context) => {
 
         const stats = await animeTopAnimes(topCount);
         return c.json(stats);
+    } catch (error) {
+        c.status(500);
+        return c.json({ message: "Internal server error" });
+    }
+};
+
+export const getAnimeTop5Animes = async (c: Context) => {
+    try {
+        const stats = await animeTopAnimes(20000);
+
+        const top5Animes = stats.slice(0, 4);
+        top5Animes.push({ anime_name: "Boshqalar", total_count: stats.slice(4).reduce((acc, curr) => acc + curr.total_count, 0), today_count: 0 });
+
+        return c.json(top5Animes.map((item) => ({ anime_name: item.anime_name, count: item.total_count })));
     } catch (error) {
         c.status(500);
         return c.json({ message: "Internal server error" });
@@ -110,6 +139,19 @@ export const getAnimeDailyTotalUsers = async (c: Context) => {
         }
 
         const stats = await animeDailyTotalUsers(days);
+        return c.json(stats);
+    } catch (error) {
+        c.status(500);
+        return c.json({ message: "Internal server error" });
+    }
+};
+
+export const getAnimeLatestAnimes = async (c: Context) => {
+    try {
+        const rawLimit = c.req.param("limit");
+        const limit = Number.parseInt(rawLimit ?? "10", 10);
+
+        const stats = await animeLatestAnimes(limit);
         return c.json(stats);
     } catch (error) {
         c.status(500);
