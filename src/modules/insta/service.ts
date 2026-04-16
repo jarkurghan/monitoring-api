@@ -59,8 +59,8 @@ export async function instaUsersByStatus() {
 
         const stats = [
             { status: "Aktiv", count: obj.active ?? 0 },
-            { status: "Boshqa", count: obj.other ?? 0 },
-            { status: "O'chirilgan", count: (obj.deleted_account ?? 0) + (obj.has_blocked ?? 0) },
+            { status: "Boshqa", count: (obj.deleted_account ?? 0) + (obj.other ?? 0) },
+            { status: "O'chirilgan", count: obj.has_blocked ?? 0 },
         ];
 
         return stats;
