@@ -3,9 +3,13 @@ import {
     queryNewUsersLastDaysTashkent,
     querySumMoviesTotalUses,
     queryTashkentDayStartsIso,
+    queryTotalUsersBeforeDayStartTashkent,
     queryTotalActiveUsers,
     queryTotalMovies,
     queryTotalUsers,
+    queryTopMoviesByTotalCount,
+    queryTopActiveUsersByTotalCount,
+    queryLatestMoviesByCreatedAt,
     queryUsersByStatus,
 } from "./repository";
 
@@ -25,12 +29,7 @@ const emptySummary: MovieSummaryBasic = {
 
 export async function movieSummaryBasic(): Promise<MovieSummaryBasic> {
     try {
-        const rows = await Promise.all([
-            queryTotalMovies,
-            querySumMoviesTotalUses,
-            queryTotalUsers,
-            queryTotalActiveUsers,
-        ]);
+        const rows = await Promise.all([queryTotalMovies, querySumMoviesTotalUses, queryTotalUsers, queryTotalActiveUsers]);
         const [[moviesRow], [usesRow], [usersRow], [activeRow]] = rows;
 
         return {
@@ -65,6 +64,22 @@ export async function movieDailyNewUsers(days: number) {
     }
 }
 
+export async function movieDailyTotalUsers(days: number): Promise<{ date: string; users: number }[]> {
+    try {
+        const [baselineRows, daily] = await Promise.all([queryTotalUsersBeforeDayStartTashkent(days), movieDailyNewUsers(days)]);
+        const baseline = baselineRows?.[0]?.count ?? 0;
+
+        let running = baseline;
+        return daily.map((d) => {
+            running += d.users ?? 0;
+            return { date: d.date, users: running };
+        });
+    } catch (error) {
+        console.error(error);
+        return [];
+    }
+}
+
 export async function movieUsersByStatus() {
     try {
         type Status = (typeof USER_STATUS)[number] | null;
@@ -85,6 +100,105 @@ export async function movieUsersByStatus() {
         ];
 
         return stats;
+    } catch (error) {
+        console.error(error);
+        return [];
+    }
+}
+
+export type MovieTopItem = {
+    code: string;
+    posts: string;
+    description: string | null;
+    total_count: number;
+    today_count: number;
+};
+
+export async function movieTopMovies(limit: number): Promise<MovieTopItem[]> {
+    try {
+        type Row = {
+            code: string;
+            posts: string;
+            description: string | null;
+            total_count: number | null;
+            today_count: number | null;
+        };
+
+        const rows: Row[] = await queryTopMoviesByTotalCount(limit);
+
+        return rows.map((r) => ({
+            code: r.code,
+            posts: r.posts,
+            description: r.description ?? null,
+            total_count: r.total_count ?? 0,
+            today_count: r.today_count ?? 0,
+        }));
+    } catch (error) {
+        console.error(error);
+        return [];
+    }
+}
+
+export type MovieTopUserItem = {
+    user_name: string;
+    total_count: number;
+    today_count: number;
+};
+
+export async function movieTopActiveUsers(limit: number): Promise<MovieTopUserItem[]> {
+    try {
+        type Row = {
+            tg_id: string;
+            first_name: string | null;
+            last_name: string | null;
+            username: string | null;
+            total_count: number | null;
+            today_count: number | null;
+        };
+
+        const rows: Row[] = await queryTopActiveUsersByTotalCount(limit);
+
+        return rows.map((r) => ({
+            user_name: (r.first_name || "") + " " + (r.last_name || ""),
+            total_count: r.total_count ?? 0,
+            today_count: r.today_count ?? 0,
+        }));
+    } catch (error) {
+        console.error(error);
+        return [];
+    }
+}
+
+export type MovieLatestItem = {
+    code: string;
+    posts: string;
+    description: string | null;
+    total_count: number;
+    today_count: number;
+    created_at: string;
+};
+
+export async function movieLatestMovies(limit: number): Promise<MovieLatestItem[]> {
+    try {
+        type Row = {
+            code: string;
+            posts: string;
+            description: string | null;
+            total_count: number | null;
+            today_count: number | null;
+            created_at: Date | string | null;
+        };
+
+        const rows: Row[] = await queryLatestMoviesByCreatedAt(limit);
+
+        return rows.map((r) => ({
+            code: r.code,
+            posts: r.posts,
+            description: r.description ?? null,
+            total_count: r.total_count ?? 0,
+            today_count: r.today_count ?? 0,
+            created_at: r.created_at ? new Date(r.created_at).toISOString() : new Date(0).toISOString(),
+        }));
     } catch (error) {
         console.error(error);
         return [];

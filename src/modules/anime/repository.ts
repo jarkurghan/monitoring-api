@@ -101,7 +101,7 @@ export function queryTopUsersByTotalCount(limit: number) {
             status: abu.status,
         })
         .from(abu)
-        .where(and(eq(abu.status, "active"), not(eq(abu.username, "najmiddin_nazirov"))))
+        .where(and(eq(abu.status, "active"), not(eq(abu.tg_id, "6389479517"))))
         .orderBy(desc(abu.total_count))
         .limit(limit);
 }
