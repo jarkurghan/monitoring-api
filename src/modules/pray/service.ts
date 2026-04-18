@@ -172,7 +172,7 @@ export async function createdUsersTillDays(days: number) {
         let running = baseline;
         for (let i = 0; i < days; i++) {
             const d = new Date(today);
-            d.setDate(today.getDate() - i);
+            d.setDate(today.getDate() - days + i + 1);
 
             const dateStr = d.toISOString().slice(0, 10);
             running += countsByDate.get(dateStr) ?? 0;

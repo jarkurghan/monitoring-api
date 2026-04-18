@@ -56,7 +56,10 @@ export const getCreatedUsersTillDays = async (c: Context) => {
             return c.json({ message: "Invalid 'days' param. Expected integer 1..365." });
         }
 
+        
+        
         const stats = await createdUsersTillDays(days);
+        console.log(stats);
         return c.json(stats);
     } catch (error) {
         c.status(500);
