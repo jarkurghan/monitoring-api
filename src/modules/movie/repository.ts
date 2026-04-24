@@ -96,7 +96,7 @@ export function queryTopActiveUsersByTotalCount(limit: number) {
             today_count: mbu.today_count,
         })
         .from(mbu)
-        .where(and(eq(mbu.status, "active"), not(eq(mbu.tg_id, "6389479517"))))
+        .where(and(eq(mbu.status, "active"), not(eq(mbu.tg_id, "6389479517")), not(eq(mbu.tg_id, "6320204709")), not(eq(mbu.tg_id, "6714138728"))))
         .orderBy(desc(mbu.total_count))
         .limit(limit);
 }

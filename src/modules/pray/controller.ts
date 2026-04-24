@@ -59,7 +59,6 @@ export const getCreatedUsersTillDays = async (c: Context) => {
         
         
         const stats = await createdUsersTillDays(days);
-        console.log(stats);
         return c.json(stats);
     } catch (error) {
         c.status(500);
