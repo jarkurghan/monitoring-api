@@ -6,6 +6,8 @@ import { getMovieTopActiveUsers } from "@/modules/movie/controller";
 import { getMovieUsersByStatus } from "@/modules/movie/controller";
 import { getMovieTop5Movies } from "@/modules/movie/controller";
 import { getMovieTopMovies } from "@/modules/movie/controller";
+import { getMovieTopStudios } from "@/modules/movie/controller";
+import { getMovieTopGenres } from "@/modules/movie/controller";
 import { Hono } from "hono";
 
 const movie = new Hono();
@@ -13,6 +15,8 @@ const movie = new Hono();
 movie.get("/stat/summary-basic", getMovieSummaryBasic);
 movie.get("/stat/users-by-status", getMovieUsersByStatus);
 movie.get("/stat/top-movies/:topCount", getMovieTopMovies);
+movie.get("/stat/top-studios/:topCount", getMovieTopStudios);
+movie.get("/stat/top-genres/:topCount", getMovieTopGenres);
 movie.get("/stat/latest-movies/:limit", getMovieLatestMovies);
 movie.get("/stat/daily-total-users/:days", getMovieDailyTotalUsers);
 movie.get("/stat/daily-new-users/:days", getMovieDailyNewUsers);

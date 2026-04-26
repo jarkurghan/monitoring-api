@@ -70,6 +70,16 @@ export function queryTopMoviesByTotalCount(limit: number) {
         .limit(limit);
 }
 
+export function queryMoviesForStudioStats() {
+    return db
+        .select({
+            description: movie.description,
+            total_count: movie.total_count,
+        })
+        .from(movie)
+        .where(dsql`${movie.description} is not null`);
+}
+
 export function queryLatestMoviesByCreatedAt(limit: number) {
     return db
         .select({

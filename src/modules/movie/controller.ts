@@ -6,6 +6,8 @@ import {
     movieSummaryBasic,
     movieTopActiveUsers,
     movieTopMovies,
+    movieTopStudios,
+    movieTopGenres,
     movieUsersByStatus,
 } from "./service";
 
@@ -76,6 +78,42 @@ export const getMovieTopMovies = async (c: Context) => {
         }
 
         const stats = await movieTopMovies(topCount);
+        return c.json(stats);
+    } catch (error) {
+        c.status(500);
+        return c.json({ message: "Internal server error" });
+    }
+};
+
+export const getMovieTopStudios = async (c: Context) => {
+    try {
+        const rawTopCount = c.req.param("topCount");
+        const topCount = Number.parseInt(rawTopCount ?? "", 10);
+
+        if (!Number.isFinite(topCount) || Number.isNaN(topCount) || topCount < 1 || topCount > 100) {
+            c.status(400);
+            return c.json({ message: "Invalid 'topCount' param. Expected integer 1..100." });
+        }
+
+        const stats = await movieTopStudios(topCount);
+        return c.json(stats);
+    } catch (error) {
+        c.status(500);
+        return c.json({ message: "Internal server error" });
+    }
+};
+
+export const getMovieTopGenres = async (c: Context) => {
+    try {
+        const rawTopCount = c.req.param("topCount");
+        const topCount = Number.parseInt(rawTopCount ?? "", 10);
+
+        if (!Number.isFinite(topCount) || Number.isNaN(topCount) || topCount < 1 || topCount > 100) {
+            c.status(400);
+            return c.json({ message: "Invalid 'topCount' param. Expected integer 1..100." });
+        }
+
+        const stats = await movieTopGenres(topCount);
         return c.json(stats);
     } catch (error) {
         c.status(500);

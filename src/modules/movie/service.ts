@@ -11,6 +11,7 @@ import {
     queryTopActiveUsersByTotalCount,
     queryLatestMoviesByCreatedAt,
     queryUsersByStatus,
+    queryMoviesForStudioStats,
 } from "./repository";
 
 export type MovieSummaryBasic = {
@@ -133,6 +134,104 @@ export async function movieTopMovies(limit: number): Promise<MovieTopItem[]> {
             total_count: r.total_count ?? 0,
             today_count: r.today_count ?? 0,
         }));
+    } catch (error) {
+        console.error(error);
+        return [];
+    }
+}
+
+export type MovieTopStudioItem = {
+    studio: string;
+    total_count: number;
+    movies_count: number;
+};
+
+function extractStudiosFromDescription(description: string): string[] {
+    const idx = description.indexOf("🎞 Studiya:");
+    if (idx === -1) return [];
+
+    const after = description.slice(idx);
+    const line = after.split(/\r?\n/, 1)[0] ?? "";
+
+    const tags = line.match(/#[^\s#]+/g) ?? [];
+    const unique = new Set(tags.map((t) => t.trim()).filter(Boolean));
+    return Array.from(unique);
+}
+
+export async function movieTopStudios(limit: number): Promise<MovieTopStudioItem[]> {
+    try {
+        type Row = { description: string | null; total_count: number | null };
+        const rows: Row[] = await queryMoviesForStudioStats();
+
+        const agg = new Map<string, { total_count: number; movies: Set<number> }>();
+
+        rows.forEach((r, i) => {
+            const desc = r.description ?? "";
+            const studios = extractStudiosFromDescription(desc);
+            if (studios.length === 0) return;
+
+            const movieTotal = r.total_count ?? 0;
+            for (const studio of studios) {
+                const current = agg.get(studio) ?? { total_count: 0, movies: new Set<number>() };
+                current.total_count += movieTotal;
+                current.movies.add(i);
+                agg.set(studio, current);
+            }
+        });
+
+        return Array.from(agg.entries())
+            .map(([studio, v]) => ({ studio, total_count: v.total_count, movies_count: v.movies.size }))
+            .sort((a, b) => b.total_count - a.total_count)
+            .slice(0, limit);
+    } catch (error) {
+        console.error(error);
+        return [];
+    }
+}
+
+export type MovieTopGenreItem = {
+    genre: string;
+    total_count: number;
+    movies_count: number;
+};
+
+function extractGenresFromDescription(description: string): string[] {
+    const idx = description.indexOf("🎬 Janr:");
+    if (idx === -1) return [];
+
+    const after = description.slice(idx);
+    const line = after.split(/\r?\n/, 1)[0] ?? "";
+
+    const tags = line.match(/#[^\s#]+/g) ?? [];
+    const unique = new Set(tags.map((t) => t.trim()).filter(Boolean));
+    return Array.from(unique);
+}
+
+export async function movieTopGenres(limit: number): Promise<MovieTopGenreItem[]> {
+    try {
+        type Row = { description: string | null; total_count: number | null };
+        const rows: Row[] = await queryMoviesForStudioStats();
+
+        const agg = new Map<string, { total_count: number; movies: Set<number> }>();
+
+        rows.forEach((r, i) => {
+            const desc = r.description ?? "";
+            const genres = extractGenresFromDescription(desc);
+            if (genres.length === 0) return;
+
+            const movieTotal = r.total_count ?? 0;
+            for (const genre of genres) {
+                const current = agg.get(genre) ?? { total_count: 0, movies: new Set<number>() };
+                current.total_count += movieTotal;
+                current.movies.add(i);
+                agg.set(genre, current);
+            }
+        });
+
+        return Array.from(agg.entries())
+            .map(([genre, v]) => ({ genre, total_count: v.total_count, movies_count: v.movies.size }))
+            .sort((a, b) => b.total_count - a.total_count)
+            .slice(0, limit);
     } catch (error) {
         console.error(error);
         return [];
